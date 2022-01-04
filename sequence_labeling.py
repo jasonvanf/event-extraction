@@ -53,8 +53,11 @@ parser.add_argument("--checkpoints", type=str, default=None, help="Directory to 
 parser.add_argument("--init_ckpt", type=str, default=None, help="already pretraining model checkpoint")
 parser.add_argument("--predict_save_path", type=str, default=None, help="predict data save path")
 parser.add_argument("--seed", type=int, default=1000, help="random seed for initialization")
-parser.add_argument('--device', choices=['cpu', 'gpu'], default="gpu", help="Select which device to train model, defaults to gpu.")
+parser.add_argument('--device', choices=['cpu', 'gpu'], default="gpu",
+                    help="Select which device to train model, defaults to gpu.")
 args = parser.parse_args()
+
+
 # yapf: enable.
 
 def set_seed(args):
@@ -84,7 +87,8 @@ def evaluate(model, criterion, metric, num_label, data_loader):
     return precision, recall, f1_score, avg_loss
 
 
-def convert_example_to_feature(example, tokenizer, label_vocab=None, max_seq_len=512, no_entity_label="O", ignore_label=-1, is_test=False):
+def convert_example_to_feature(example, tokenizer, label_vocab=None, max_seq_len=512, no_entity_label="O",
+                               ignore_label=-1, is_test=False):
     tokens, labels = example
     tokenized_input = tokenizer(
         tokens,
@@ -99,7 +103,7 @@ def convert_example_to_feature(example, tokenizer, label_vocab=None, max_seq_len
     if is_test:
         return input_ids, token_type_ids, seq_len
     elif label_vocab is not None:
-        labels = labels[:(max_seq_len-2)]
+        labels = labels[:(max_seq_len - 2)]
         encoded_label = [no_entity_label] + labels + [no_entity_label]
         encoded_label = [label_vocab[x] for x in encoded_label]
         return input_ids, token_type_ids, seq_len, encoded_label
@@ -107,6 +111,7 @@ def convert_example_to_feature(example, tokenizer, label_vocab=None, max_seq_len
 
 class DuEventExtraction(paddle.io.Dataset):
     """DuEventExtraction"""
+
     def __init__(self, data_path, tag_path):
         self.label_vocab = load_dict(tag_path)
         self.word_ids = []
@@ -161,10 +166,10 @@ def do_train():
         ignore_label=ignore_label,
         is_test=False)
     batchify_fn = lambda samples, fn=Tuple(
-        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int32'), # input ids
-        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int32'), # token type ids
-        Stack(dtype='int64'), # sequence lens
-        Pad(axis=0, pad_val=ignore_label, dtype='int64') # labels
+        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int32'),  # input ids
+        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int32'),  # token type ids
+        Stack(dtype='int64'),  # sequence lens
+        Pad(axis=0, pad_val=ignore_label, dtype='int64')  # labels
     ): fn(list(map(trans_func, samples)))
 
     batch_sampler = paddle.io.DistributedBatchSampler(train_ds, batch_size=args.batch_size, shuffle=True)
@@ -213,11 +218,11 @@ def do_train():
             if step > 0 and step % args.valid_step == 0 and rank == 0:
                 p, r, f1, avg_loss = evaluate(model, criterion, metric, len(label_map), dev_loader)
                 print(f'dev step: {step} - loss: {avg_loss:.5f}, precision: {p:.5f}, recall: {r:.5f}, ' \
-                        f'f1: {f1:.5f} current best {best_f1:.5f}')
+                      f'f1: {f1:.5f} current best {best_f1:.5f}')
                 if f1 > best_f1:
                     best_f1 = f1
                     print(f'==============================================save best model ' \
-                            f'best performerence {best_f1:5f}')
+                          f'best performerence {best_f1:5f}')
                     paddle.save(model.state_dict(), '{}/best.pdparams'.format(args.checkpoints))
             step += 1
 
@@ -246,20 +251,20 @@ def do_predict():
         print("Loaded parameters from %s" % args.init_ckpt)
 
     # load data from predict file
-    sentences = read_by_lines(args.predict_data) # origin data format
+    sentences = read_by_lines(args.predict_data)  # origin data format
     sentences = [json.loads(sent) for sent in sentences]
 
     encoded_inputs_list = []
     for sent in sentences:
         sent = sent["text"].replace(" ", "\002")
         input_ids, token_type_ids, seq_len = convert_example_to_feature([list(sent), []], tokenizer,
-                    max_seq_len=args.max_seq_len, is_test=True)
+                                                                        max_seq_len=args.max_seq_len, is_test=True)
         encoded_inputs_list.append((input_ids, token_type_ids, seq_len))
 
     batchify_fn = lambda samples, fn=Tuple(
-        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int32'), # input_ids
-        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int32'), # token_type_ids
-        Stack(dtype='int64') # sequence lens
+        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int32'),  # input_ids
+        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int32'),  # token_type_ids
+        Stack(dtype='int64')  # sequence lens
     ): fn(samples)
     # Seperates data into some batches.
     batch_encoded_inputs = [encoded_inputs_list[i: i + args.batch_size]
@@ -284,7 +289,6 @@ def do_predict():
     sentences = [json.dumps(sent, ensure_ascii=False) for sent in sentences]
     write_by_lines(args.predict_save_path, sentences)
     print("save data {} to {}".format(len(sentences), args.predict_save_path))
-
 
 
 if __name__ == '__main__':
