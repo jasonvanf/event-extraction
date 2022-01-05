@@ -54,3 +54,4 @@ wheels/
 .ipynb_checkpoints/
 data/
 output/
+ckpt/

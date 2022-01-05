@@ -1,0 +1,56 @@
+model:
+  init_ckpt:
+    val: "./ckpt/DuEE1.0/role/best.pdparams"
+    meaning: "Already pretraining model checkpoint"
+  checkpoints:
+    val: "./ckpt/DuEE1.0/role"
+    meaning: "Directory to model checkpoint"
+
+train:
+  seed:
+    val: 1000
+    meaning: "Random seed for initialization"
+  device:
+    val: "gpu"
+    meaning: "Select which device to train model, defaults to gpu."
+  num_epoch:
+    val: 20
+    meaning: "Number of epoches for fine-tuning."
+  learning_rate:
+    val: 5e-5
+    meaning: "Learning rate used to train with warmup."
+  weight_decay:
+    val: 0.01
+    meaning: "Weight decay rate for L2 regularization."
+  warmup_proportion:
+    val: 0.1
+    meaning: "Warmup proportion params for warmup strategy."
+  max_seq_len:
+    val: 300
+    meaning: "Number of words of the longest seqence."
+  valid_step:
+    val: 50
+    meaning: "Validation step."
+  skip_step:
+    val: 10
+    meaning: "Skip step."
+  batch_size:
+    val: 16
+    meaning: "Total examples' number in batch for training."
+
+data:
+  tag_path:
+    val: "./conf/DuEE1.0/role_tag.dict"
+    meaning: "The path of the label dictionary."
+  train_data:
+    val: "./data/DuEE1.0/role/train.tsv"
+    meaning: "The path of the train data."
+  dev_data:
+    val: "./data/DuEE1.0/role/dev.tsv"
+    meaning: "The path of the dev data."
+  test_data:
+    val: "./data/DuEE1.0/role/test.tsv"
+    meaning: "The path of the test data."
+  predict_data:
+    val: "./data/DuEE1.0/duee_test1.json"
+    meaning: "The path of the predict data."
