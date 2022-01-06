@@ -25,6 +25,7 @@ from functools import partial
 
 import numpy as np
 import paddle
+import jionlp as jio
 import utils
 import paddle.nn.functional as F
 from paddlenlp.data import Stack, Tuple, Pad
@@ -184,16 +185,14 @@ def combine_predict(text):
     print(comb_data)
 
 
-if __name__ == '__main__':
+def role_predict(text):
     parser = argparse.ArgumentParser(__doc__, add_help=False)
     utils.load_yaml(parser, './conf/args.yaml')
-    args = parser.parse_args()
 
     role_parser = argparse.ArgumentParser(parents=[parser])
     utils.load_yaml(role_parser, './conf/role_args.yaml')
     role_args = role_parser.parse_args()
 
-    text = '昨天成都市武侯区，火灾共导致85人死亡，112人受伤'
     role_data = do_predict(role_args, text=text)
 
     sent_role_mapping = {}
@@ -205,6 +204,24 @@ if __name__ == '__main__':
             role_type = r["type"]
             if role_type not in role_ret:
                 role_ret[role_type] = []
-            role_ret[role_type].append("".join(r["text"]))
+
+            role_text = "".join(r["text"])
+            if role_type == '时间':
+                acc_role = jio.parse_time(role_text, time.time())
+                role_text = acc_role['time']
+            elif role_type == '地点':
+                acc_role = jio.parse_location(role_text)
+                role_text = acc_role
+
+            role_ret[role_type] = role_text
         sent_role_mapping[d_json["id"]] = role_ret
-    print(sent_role_mapping)
+    return sent_role_mapping
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(__doc__)
+    parser.add_argument("--text", type=str, default=None, help="Text for predicting.")
+    args = parser.parse_args()
+
+    result = role_predict(args.text)
+    print(result)
