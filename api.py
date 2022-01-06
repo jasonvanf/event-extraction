@@ -59,6 +59,11 @@ def convert_example_to_feature(example, tokenizer, label_vocab=None, max_seq_len
 
 
 def do_predict(args, text=''):
+    """
+    Do predict for single sentence
+    Either trigger or role are ok.
+    """
+
     paddle.set_device(args.device)
 
     tokenizer = ErnieTokenizer.from_pretrained("ernie-1.0")
@@ -115,7 +120,10 @@ def do_predict(args, text=''):
 
 
 def predict_data_process(trigger_data, role_data, schema_file):
-    """predict_data_process"""
+    """
+    Predict data process for single sentence
+    """
+
     pred_ret = []
     schema_datas = read_by_lines(schema_file)
 
@@ -165,6 +173,10 @@ def predict_data_process(trigger_data, role_data, schema_file):
 
 
 def combine_predict(text):
+    """
+    Combine from do_predict to predict_data_process for trigger and role
+    """
+
     parser = argparse.ArgumentParser(__doc__, add_help=False)
     utils.load_yaml(parser, './conf/args.yaml')
     args = parser.parse_args()
@@ -186,6 +198,10 @@ def combine_predict(text):
 
 
 def role_predict(text):
+    """
+    Predict only role for single sentence
+    """
+
     parser = argparse.ArgumentParser(__doc__, add_help=False)
     utils.load_yaml(parser, './conf/args.yaml')
 
