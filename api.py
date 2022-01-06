@@ -31,9 +31,11 @@ import paddle.nn.functional as F
 from paddlenlp.data import Stack, Tuple, Pad
 from paddlenlp.transformers import ErnieTokenizer, ErnieForTokenClassification, LinearDecayWithWarmup
 from paddlenlp.metrics import ChunkEvaluator
+from flask import Flask, request, jsonify
 from utils import load_dict, read_by_lines, extract_result
 
 warnings.filterwarnings('ignore')
+app = Flask(__name__)
 
 
 def convert_example_to_feature(example, tokenizer, label_vocab=None, max_seq_len=512, no_entity_label="O",
@@ -234,10 +236,38 @@ def role_predict(text):
     return sent_role_mapping
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(__doc__)
-    parser.add_argument("--text", type=str, default=None, help="Text for predicting.")
-    args = parser.parse_args()
+@app.route("/keyword", methods=["GET", "POST"])
+def info_test():
+    """
+    返回标签和实体，支持 post 和 get 请求
 
-    result = role_predict(args.text)
+    kwargs:
+        text: 搜索文本
+
+    post:
+        url: http://127.0.0.1:5000/keyword
+        kwargs: {"text": ...}
+    get:
+        url: http://127.0.0.1:5000/keyword?text...
+    """
+    data = request.form if request.method == "POST" else request.args
+    return jsonify(role_predict(**data))
+
+
+@app.route("/")
+def hello_world():
+    return "<p>Hello, World!</p>"
+
+
+if __name__ == '__main__':
+    # app.run(host="127.0.0.1", port=5000, debug=True)
+    result = role_predict('昨天成都市武侯区，火灾共导致85人死亡，112人受伤')
+    print(result)
+    result = role_predict('2021年12月 绵竹')
+    print(result)
+    result = role_predict('化工厂 1人死亡')
+    print(result)
+    result = role_predict('绵阳市 7天酒店')
+    print(result)
+    result = role_predict('阿坝州火灾')
     print(result)
