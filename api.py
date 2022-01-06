@@ -20,6 +20,7 @@ import json
 import warnings
 import random
 import argparse
+import time
 from functools import partial
 
 import numpy as np
@@ -140,6 +141,8 @@ def predict_data_process(trigger_data, role_data, schema_file):
         pred_event_types = list(set([t["type"] for t in t_ret]))
         event_list = []
         for event_type in pred_event_types:
+            if event_type not in schema:
+                continue
             role_list = schema[event_type]
             arguments = []
             for role_type, ags in sent_role_mapping[d_json["id"]].items():
@@ -160,7 +163,7 @@ def predict_data_process(trigger_data, role_data, schema_file):
     return pred_ret
 
 
-if __name__ == '__main__':
+def combine_predict(text):
     parser = argparse.ArgumentParser(__doc__, add_help=False)
     utils.load_yaml(parser, './conf/args.yaml')
     args = parser.parse_args()
@@ -173,7 +176,35 @@ if __name__ == '__main__':
     utils.load_yaml(role_parser, './conf/role_args.yaml')
     role_args = role_parser.parse_args()
 
-    text = '昨天成都市武侯区，火灾共导致85人死亡'
     trigger_data = do_predict(trigger_args, text=text)
+    print(trigger_data)
     role_data = do_predict(role_args, text=text)
-    predict_data_process(trigger_data, role_data, args.schema_file)
+    print(role_data)
+    comb_data = predict_data_process(trigger_data, role_data, args.schema_file)
+    print(comb_data)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(__doc__, add_help=False)
+    utils.load_yaml(parser, './conf/args.yaml')
+    args = parser.parse_args()
+
+    role_parser = argparse.ArgumentParser(parents=[parser])
+    utils.load_yaml(role_parser, './conf/role_args.yaml')
+    role_args = role_parser.parse_args()
+
+    text = '昨天成都市武侯区，火灾共导致85人死亡，112人受伤'
+    role_data = do_predict(role_args, text=text)
+
+    sent_role_mapping = {}
+    for d in role_data:
+        d_json = json.loads(d)
+        r_ret = extract_result(d_json["text"], d_json["pred"]["labels"])
+        role_ret = {}
+        for r in r_ret:
+            role_type = r["type"]
+            if role_type not in role_ret:
+                role_ret[role_type] = []
+            role_ret[role_type].append("".join(r["text"]))
+        sent_role_mapping[d_json["id"]] = role_ret
+    print(sent_role_mapping)
