@@ -32,9 +32,6 @@ from paddlenlp.metrics import ChunkEvaluator
 from utils import load_dict
 
 warnings.filterwarnings('ignore')
-parser = argparse.ArgumentParser(__doc__)
-utils.load_yaml(parser, './conf/args.yaml')
-args = parser.parse_args()
 
 
 def convert_example_to_feature(example, tokenizer, label_vocab=None, max_seq_len=512, no_entity_label="O",
@@ -59,7 +56,7 @@ def convert_example_to_feature(example, tokenizer, label_vocab=None, max_seq_len
         return input_ids, token_type_ids, seq_len, encoded_label
 
 
-def do_predict(text):
+def do_predict(args, text=''):
     paddle.set_device(args.device)
 
     tokenizer = ErnieTokenizer.from_pretrained("ernie-1.0")
@@ -78,7 +75,6 @@ def do_predict(text):
 
     # load data from predict file
     sentences = [{'text': text, 'id': 'a7c74f75eb8986377096b4dc62db217d'}]  # origin data format
-    sentences = [json.loads(sent) for sent in sentences]
 
     encoded_inputs_list = []
     for sent in sentences:
@@ -117,4 +113,18 @@ def do_predict(text):
 
 
 if __name__ == '__main__':
-    do_predict('昨天有多少人死亡')
+    parser = argparse.ArgumentParser(__doc__, add_help=False)
+    utils.load_yaml(parser, './conf/args.yaml')
+
+    role_parser = argparse.ArgumentParser(parents=[parser])
+    utils.load_yaml(role_parser, './conf/role_args.yaml')
+    role_args = role_parser.parse_args()
+
+    trigger_parser = argparse.ArgumentParser(parents=[parser])
+    utils.load_yaml(trigger_parser, './conf/trigger_args.yaml')
+    trigger_args = trigger_parser.parse_args()
+
+    text = '昨天成都市武侯区，火灾共导致85人死亡'
+    do_predict(role_args, text=text)
+    do_predict(trigger_args, text=text)
+

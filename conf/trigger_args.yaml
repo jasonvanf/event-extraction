@@ -1,0 +1,24 @@
+model:
+  init_ckpt:
+    val: "./ckpt/DuEE1.0/trigger/best.pdparams"
+    meaning: "Already pretraining model checkpoint"
+  checkpoints:
+    val: "./ckpt/DuEE1.0/trigger"
+    meaning: "Directory to model checkpoint"
+
+data:
+  tag_path:
+    val: "./conf/DuEE1.0/trigger_tag.dict"
+    meaning: "The path of the label dictionary."
+  train_data:
+    val: "./data/DuEE1.0/trigger/train.tsv"
+    meaning: "The path of the train data."
+  dev_data:
+    val: "./data/DuEE1.0/trigger/dev.tsv"
+    meaning: "The path of the dev data."
+  test_data:
+    val: "./data/DuEE1.0/trigger/test.tsv"
+    meaning: "The path of the test data."
+  predict_data:
+    val: "./data/DuEE1.0/duee_test1.json"
+    meaning: "The path of the predict data."
