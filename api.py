@@ -29,7 +29,7 @@ import paddle.nn.functional as F
 from paddlenlp.data import Stack, Tuple, Pad
 from paddlenlp.transformers import ErnieTokenizer, ErnieForTokenClassification, LinearDecayWithWarmup
 from paddlenlp.metrics import ChunkEvaluator
-from utils import load_dict
+from utils import load_dict, read_by_lines, extract_result
 
 warnings.filterwarnings('ignore')
 
@@ -109,22 +109,71 @@ def do_predict(args, text=''):
     for sent, ret in zip(sentences, results):
         sent["pred"] = ret
     sentences = [json.dumps(sent, ensure_ascii=False) for sent in sentences]
-    print(sentences)
+    return sentences
+
+
+def predict_data_process(trigger_data, role_data, schema_file):
+    """predict_data_process"""
+    pred_ret = []
+    schema_datas = read_by_lines(schema_file)
+
+    schema = {}
+    for s in schema_datas:
+        d_json = json.loads(s)
+        schema[d_json["event_type"]] = [r["role"] for r in d_json["role_list"]]
+
+    sent_role_mapping = {}
+    for d in role_data:
+        d_json = json.loads(d)
+        r_ret = extract_result(d_json["text"], d_json["pred"]["labels"])
+        role_ret = {}
+        for r in r_ret:
+            role_type = r["type"]
+            if role_type not in role_ret:
+                role_ret[role_type] = []
+            role_ret[role_type].append("".join(r["text"]))
+        sent_role_mapping[d_json["id"]] = role_ret
+
+    for d in trigger_data:
+        d_json = json.loads(d)
+        t_ret = extract_result(d_json["text"], d_json["pred"]["labels"])
+        pred_event_types = list(set([t["type"] for t in t_ret]))
+        event_list = []
+        for event_type in pred_event_types:
+            role_list = schema[event_type]
+            arguments = []
+            for role_type, ags in sent_role_mapping[d_json["id"]].items():
+                if role_type not in role_list:
+                    continue
+                for arg in ags:
+                    if len(arg) == 1:
+                        continue
+                    arguments.append({"role": role_type, "argument": arg})
+            event = {"event_type": event_type, "arguments": arguments}
+            event_list.append(event)
+        pred_ret.append({
+            "id": d_json["id"],
+            "text": d_json["text"],
+            "event_list": event_list
+        })
+    pred_ret = [json.dumps(r, ensure_ascii=False) for r in pred_ret]
+    return pred_ret
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(__doc__, add_help=False)
     utils.load_yaml(parser, './conf/args.yaml')
-
-    role_parser = argparse.ArgumentParser(parents=[parser])
-    utils.load_yaml(role_parser, './conf/role_args.yaml')
-    role_args = role_parser.parse_args()
+    args = parser.parse_args()
 
     trigger_parser = argparse.ArgumentParser(parents=[parser])
     utils.load_yaml(trigger_parser, './conf/trigger_args.yaml')
     trigger_args = trigger_parser.parse_args()
 
-    text = '昨天成都市武侯区，火灾共导致85人死亡'
-    do_predict(role_args, text=text)
-    do_predict(trigger_args, text=text)
+    role_parser = argparse.ArgumentParser(parents=[parser])
+    utils.load_yaml(role_parser, './conf/role_args.yaml')
+    role_args = role_parser.parse_args()
 
+    text = '昨天成都市武侯区，火灾共导致85人死亡'
+    trigger_data = do_predict(trigger_args, text=text)
+    role_data = do_predict(role_args, text=text)
+    predict_data_process(trigger_data, role_data, args.schema_file)
