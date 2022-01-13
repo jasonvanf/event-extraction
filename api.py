@@ -261,7 +261,7 @@ def hello_world():
 
 if __name__ == '__main__':
     # app.run(host="127.0.0.1", port=5000, debug=True)
-    result = role_predict('昨天成都市武侯区，火灾共导致85人死亡，112人受伤')
+    result = role_predict('昨天在武侯，火灾共导致85人死亡，112人受伤')
     print(result)
     result = role_predict('2021年12月 绵竹')
     print(result)
