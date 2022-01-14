@@ -1,4 +1,4 @@
-dataset_name=DuEE1.0
+dataset_name=doccano
 data_dir=./data/${dataset_name}
 conf_dir=./conf/${dataset_name}
 ckpt_dir=./ckpt/${dataset_name}
