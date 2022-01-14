@@ -32,13 +32,13 @@ train:
 
 data:
   trigger_file:
-    val: "./ckpt/DuEE1.0/trigger/test_pred.json"
+    val: "./ckpt/doccano/trigger/test_pred.json"
     meaning: "Trigger model predict data path."
   role_file:
-    val: "./ckpt/DuEE1.0/role/test_pred.json"
+    val: "./ckpt/doccano/role/test_pred.json"
     meaning: "Role model predict data path."
   schema_file:
-    val: "./conf/DuEE1.0/event_schema.json"
+    val: "./conf/doccano/event_schema.json"
     meaning: "Schema file path."
   save_path:
     val: "./submit/test_duee_1.json"
