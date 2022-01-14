@@ -215,7 +215,7 @@ def do_train():
             loss_item = loss.numpy().item()
             if step > 0 and step % args.skip_step == 0 and rank == 0:
                 print(f'train epoch: {epoch} - step: {step} (total: {num_training_steps}) - loss: {loss_item:.6f}')
-            if step > 0 and step % args.valid_step == 0 and rank == 0:
+            if step > 0 and step % args.valid_step == 0 and rank == 0 and len(dev_ds) > 0:
                 p, r, f1, avg_loss = evaluate(model, criterion, metric, len(label_map), dev_loader)
                 print(f'dev step: {step} - loss: {avg_loss:.5f}, precision: {p:.5f}, recall: {r:.5f}, ' \
                       f'f1: {f1:.5f} current best {best_f1:.5f}')
