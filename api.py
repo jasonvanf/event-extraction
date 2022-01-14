@@ -224,10 +224,10 @@ def role_predict(text):
                 role_ret[role_type] = []
 
             role_text = "".join(r["text"])
-            if role_type == '时间':
+            if role_type == '报警时间':
                 acc_role = jio.parse_time(role_text, time.time())
                 role_text = acc_role['time']
-            elif role_type == '地点':
+            elif role_type == '行政区域':
                 acc_role = jio.parse_location(role_text)
                 role_text = acc_role
 
@@ -261,13 +261,13 @@ def hello_world():
 
 if __name__ == '__main__':
     # app.run(host="127.0.0.1", port=5000, debug=True)
-    result = role_predict('昨天在武侯，火灾共导致85人死亡，112人受伤')
+    result = role_predict('昨天 武侯 85人死亡 112人受伤')
     print(result)
     result = role_predict('2021年12月 绵竹')
     print(result)
-    result = role_predict('化工厂 1人死亡')
+    result = role_predict('重点单位 10处隐患')
     print(result)
-    result = role_predict('绵阳市 7天酒店')
+    result = role_predict('高层 火灾损失100万元')
     print(result)
-    result = role_predict('阿坝州火灾')
+    result = role_predict('上周 100平以上建筑')
     print(result)
