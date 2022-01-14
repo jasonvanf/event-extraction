@@ -261,13 +261,13 @@ def hello_world():
 
 if __name__ == '__main__':
     # app.run(host="127.0.0.1", port=5000, debug=True)
-    result = role_predict('昨天 武侯 85人死亡 112人受伤')
+    result = role_predict('1月4日12点 武侯 85人死亡 112人受伤')
     print(result)
     result = role_predict('2021年12月 绵竹')
     print(result)
-    result = role_predict('重点单位 10处隐患')
+    result = role_predict('单位类型：重点单位 10处隐患')
     print(result)
-    result = role_predict('高层 火灾损失100万元')
+    result = role_predict('建筑类型 高层 火灾损失100万元')
     print(result)
     result = role_predict('上周 100平以上建筑')
     print(result)
