@@ -46,9 +46,9 @@ if __name__ == "__main__":
         model,
         input_spec=[
             paddle.static.InputSpec(
-                shape=[None, None], dtype="int32"),  # input_ids
+                shape=[None, None], dtype="int64"),  # input_ids
             paddle.static.InputSpec(
-                shape=[None, None], dtype="int32")  # segment_ids
+                shape=[None, None], dtype="int64")  # segment_ids
         ])
 
     save_path = os.path.join(args.output_path, "inference")

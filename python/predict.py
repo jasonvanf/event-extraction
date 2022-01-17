@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import sys
 
 import argparse
 import numpy as np
@@ -24,21 +25,32 @@ from paddlenlp.data import Stack, Tuple, Pad
 from paddlenlp.utils.log import logger
 from paddlenlp.datasets import load_dataset
 from paddlenlp.transformers import ErnieTokenizer
+
+sys.path.append('./')
+
 from utils import load_dict
 
 # yapf: disable
 parser = argparse.ArgumentParser(__doc__)
-parser.add_argument("--model_dir", type=str, default='./ckpt/doccano/role', help="The path to parameters in static graph.")
+parser.add_argument("--model_dir", type=str, default='./ckpt/doccano/role',
+                    help="The path to parameters in static graph.")
 parser.add_argument("--data_dir", type=str, default="./conf/doccano", help="The folder where the dataset is located.")
 parser.add_argument("--batch_size", type=int, default=32, help="The number of sequences contained in a mini-batch.")
-parser.add_argument("--device", default="gpu", type=str, choices=["cpu", "gpu"] ,help="The device to select to train the model, is must be cpu/gpu.")
-parser.add_argument('--use_tensorrt', default=False, type=eval, choices=[True, False], help='Enable to use tensorrt to speed up.')
-parser.add_argument("--precision", default="fp32", type=str, choices=["fp32", "fp16", "int8"], help='The tensorrt precision.')
+parser.add_argument("--device", default="gpu", type=str, choices=["cpu", "gpu"],
+                    help="The device to select to train the model, is must be cpu/gpu.")
+parser.add_argument('--use_tensorrt', default=False, type=eval, choices=[True, False],
+                    help='Enable to use tensorrt to speed up.')
+parser.add_argument("--precision", default="fp32", type=str, choices=["fp32", "fp16", "int8"],
+                    help='The tensorrt precision.')
 parser.add_argument('--cpu_threads', default=10, type=int, help='Number of threads to predict when using cpu.')
-parser.add_argument('--enable_mkldnn', default=False, type=eval, choices=[True, False], help='Enable to use mkldnn to speed up when using cpu.')
-parser.add_argument("--benchmark", type=eval, default=False, help="To log some information about environment and running.")
+parser.add_argument('--enable_mkldnn', default=False, type=eval, choices=[True, False],
+                    help='Enable to use mkldnn to speed up when using cpu.')
+parser.add_argument("--benchmark", type=eval, default=False,
+                    help="To log some information about environment and running.")
 parser.add_argument("--save_log_path", type=str, default="./log_output/doccano", help="The file path to save log.")
 args = parser.parse_args()
+
+
 # yapf: enable
 
 
@@ -209,20 +221,18 @@ class Predictor(object):
 
         if args.benchmark:
             self.autolog.times.end(stamp=True)
-        sentences = [example[0] for example in dataset.data]
+        sentences = [example[0] for example in dataset]
         results = parse_decodes(sentences, all_preds, all_lens, label_vocab)
         return results
 
 
 if __name__ == '__main__':
     tokenizer = ErnieTokenizer.from_pretrained('ernie-1.0')
-    test_ds = load_dataset(
-        read, data_path=os.path.join(args.data_dir, 'test.tsv'), lazy=False)
-    label_vocab = load_dict(os.path.join(args.data_dir, 'role_tag.dic'))
+    label_vocab = load_dict(os.path.join(args.data_dir, 'role_tag.dict'))
 
     batchify_fn = lambda samples, fn=Tuple(
-        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int32'),  # input_ids
-        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int32'),  # token_type_ids
+        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int64'),  # input_ids
+        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int64'),  # token_type_ids
         Stack(dtype='int64')  # sequence lens
     ): fn(samples)
 
@@ -230,6 +240,8 @@ if __name__ == '__main__':
                           args.use_tensorrt, args.precision, args.enable_mkldnn,
                           args.benchmark, args.save_log_path)
 
+    text = '1月4日12点 武侯 85人死亡 112人受伤'
+    test_ds = [[text]]  # origin data format
     results = predictor.predict(test_ds, batchify_fn, tokenizer, label_vocab)
     print("\n".join(results))
     if args.benchmark:

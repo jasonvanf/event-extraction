@@ -166,8 +166,8 @@ def do_train():
         ignore_label=ignore_label,
         is_test=False)
     batchify_fn = lambda samples, fn=Tuple(
-        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int32'),  # input ids
-        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int32'),  # token type ids
+        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int64'),  # input ids
+        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int64'),  # token type ids
         Stack(dtype='int64'),  # sequence lens
         Pad(axis=0, pad_val=ignore_label, dtype='int64')  # labels
     ): fn(list(map(trans_func, samples)))
@@ -262,8 +262,8 @@ def do_predict():
         encoded_inputs_list.append((input_ids, token_type_ids, seq_len))
 
     batchify_fn = lambda samples, fn=Tuple(
-        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int32'),  # input_ids
-        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int32'),  # token_type_ids
+        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int64'),  # input_ids
+        Pad(axis=0, pad_val=tokenizer.vocab[tokenizer.pad_token], dtype='int64'),  # token_type_ids
         Stack(dtype='int64')  # sequence lens
     ): fn(samples)
     # Seperates data into some batches.
