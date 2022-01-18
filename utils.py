@@ -14,6 +14,10 @@
 
 import hashlib
 import yaml
+import json
+import time
+
+import jionlp as jio
 
 
 def cal_md5(str):
@@ -96,6 +100,30 @@ def extract_result(text, labels):
             cur_type = None
             is_start = False
     return ret
+
+
+def predict2json(data):
+    sent_role_mapping = {}
+    for d in data:
+        d_json = json.loads(d)
+        r_ret = extract_result(d_json["text"], d_json["pred"]["labels"])
+        role_ret = {}
+        for r in r_ret:
+            role_type = r["type"]
+            if role_type not in role_ret:
+                role_ret[role_type] = []
+
+            role_text = "".join(r["text"])
+            if role_type == '报警时间':
+                acc_role = jio.parse_time(role_text, time.time())
+                role_text = acc_role['time']
+            elif role_type == '行政区域':
+                acc_role = jio.parse_location(role_text)
+                role_text = acc_role
+
+            role_ret[role_type] = role_text
+        sent_role_mapping[d_json["id"]] = role_ret
+    return sent_role_mapping
 
 
 def str2bool(v):

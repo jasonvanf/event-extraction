@@ -25,14 +25,13 @@ from functools import partial
 
 import numpy as np
 import paddle
-import jionlp as jio
 import utils
 import paddle.nn.functional as F
 from paddlenlp.data import Stack, Tuple, Pad
 from paddlenlp.transformers import ErnieTokenizer, ErnieForTokenClassification, LinearDecayWithWarmup
 from paddlenlp.metrics import ChunkEvaluator
 from flask import Flask, request, jsonify
-from utils import load_dict, read_by_lines, extract_result
+from utils import load_dict, read_by_lines, extract_result, predict2json
 
 warnings.filterwarnings('ignore')
 app = Flask(__name__)
@@ -213,27 +212,7 @@ def role_predict(text):
 
     role_data = do_predict(role_args, text=text)
 
-    sent_role_mapping = {}
-    for d in role_data:
-        d_json = json.loads(d)
-        r_ret = extract_result(d_json["text"], d_json["pred"]["labels"])
-        role_ret = {}
-        for r in r_ret:
-            role_type = r["type"]
-            if role_type not in role_ret:
-                role_ret[role_type] = []
-
-            role_text = "".join(r["text"])
-            if role_type == '报警时间':
-                acc_role = jio.parse_time(role_text, time.time())
-                role_text = acc_role['time']
-            elif role_type == '行政区域':
-                acc_role = jio.parse_location(role_text)
-                role_text = acc_role
-
-            role_ret[role_type] = role_text
-        sent_role_mapping[d_json["id"]] = role_ret
-    return sent_role_mapping
+    return predict2json(role_data)
 
 
 @app.route("/keyword", methods=["GET", "POST"])
@@ -263,11 +242,11 @@ if __name__ == '__main__':
     # app.run(host="127.0.0.1", port=5000, debug=True)
     result = role_predict('1月4日12点 武侯 85人死亡 112人受伤')
     print(result)
-    result = role_predict('2021年12月 绵竹')
-    print(result)
-    result = role_predict('单位类型：重点单位 10处隐患')
-    print(result)
-    result = role_predict('建筑类型 高层 火灾损失100万元')
-    print(result)
-    result = role_predict('上周 100平以上建筑')
-    print(result)
+    # result = role_predict('2021年12月 绵竹')
+    # print(result)
+    # result = role_predict('单位类型：重点单位 10处隐患')
+    # print(result)
+    # result = role_predict('建筑类型 高层 火灾损失100万元')
+    # print(result)
+    # result = role_predict('上周 100平以上建筑')
+    # print(result)

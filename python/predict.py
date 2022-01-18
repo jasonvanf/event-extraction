@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import sys
+import json
 
 import argparse
 import numpy as np
@@ -28,7 +29,7 @@ from paddlenlp.transformers import ErnieTokenizer
 
 sys.path.append('./')
 
-from utils import load_dict
+from utils import load_dict, predict2json
 
 # yapf: disable
 parser = argparse.ArgumentParser(__doc__)
@@ -74,28 +75,19 @@ def parse_decodes(sentences, predictions, lengths, label_vocab):
     for idx, end in enumerate(lengths):
         sent = sentences[idx][:end]
         tags = [id_label[x] for x in predictions[idx][:end]]
-        sent_out = []
-        tags_out = []
-        words = ""
-        for s, t in zip(sent, tags):
-            if t.endswith('-B') or t == 'O':
-                if len(words):
-                    sent_out.append(words)
-                tags_out.append(t.split('-')[0])
-                words = s
-            else:
-                words += s
-        if len(sent_out) < len(tags_out):
-            sent_out.append(words)
-        outputs.append(''.join(
-            [str((s, t)) for s, t in zip(sent_out, tags_out)]))
-    return outputs
+        outputs.append({"id": idx, "text": sent, "pred": {"labels": tags}})
+
+    return [json.dumps(sent, ensure_ascii=False) for sent in outputs]
 
 
 def convert_to_features(example, tokenizer):
     tokens = example[0]
+    tokens = tokens.replace(" ", "\002")
     tokenized_input = tokenizer(
-        tokens, return_length=True, is_split_into_words=True)
+        list(tokens),
+        return_length=True,
+        is_split_into_words=True,
+        max_seq_len=300)
     # Token '[CLS]' and '[SEP]' will get label 'O'
     return tokenized_input['input_ids'], tokenized_input[
         'token_type_ids'], tokenized_input['seq_len']
@@ -222,8 +214,7 @@ class Predictor(object):
         if args.benchmark:
             self.autolog.times.end(stamp=True)
         sentences = [example[0] for example in dataset]
-        results = parse_decodes(sentences, all_preds, all_lens, label_vocab)
-        return results
+        return parse_decodes(sentences, all_preds, all_lens, label_vocab)
 
 
 if __name__ == '__main__':
@@ -243,6 +234,6 @@ if __name__ == '__main__':
     text = '1月4日12点 武侯 85人死亡 112人受伤'
     test_ds = [[text]]  # origin data format
     results = predictor.predict(test_ds, batchify_fn, tokenizer, label_vocab)
-    print("\n".join(results))
+    print(predict2json(results))
     if args.benchmark:
         predictor.autolog.report()
