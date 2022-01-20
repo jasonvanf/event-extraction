@@ -17,7 +17,23 @@ import yaml
 import json
 import time
 
-import jionlp as jio
+# import jionlp as jio
+
+
+NAME_CODE = {
+    '行政区域': {'code': 'region', 'group': 4},
+    '单位类型': {'code': 'deptType', 'group': 0},
+    '隐患数量': {'code': 'hiddenCount', 'group': 1},
+    '火灾数量': {'code': 'fireCount', 'group': 1},
+    '火灾损失': {'code': 'fireLoss', 'group': 1},
+    '建筑类型': {'code': 'buildType', 'group': 0},
+    '建筑面积': {'code': 'buildArea', 'group': 1},
+    '死亡人数': {'code': 'deathCount', 'group': 1},
+    '受伤人数': {'code': 'injuredCount', 'group': 1},
+    '报警时间': {'code': 'alarmTime', 'group': 3},
+    '过火面积': {'code': 'fireArea', 'group': 1},
+    '起火原因': {'code': 'fireReason', 'group': 0},
+}
 
 
 def cal_md5(str):
@@ -109,17 +125,18 @@ def predict2json(data):
         r_ret = extract_result(d_json["text"], d_json["pred"]["labels"])
         role_ret = {}
         for r in r_ret:
-            role_type = r["type"]
+            role_type = NAME_CODE[r["type"]]['code']
             if role_type not in role_ret:
                 role_ret[role_type] = []
 
             role_text = "".join(r["text"])
-            if role_type == '报警时间':
-                acc_role = jio.parse_time(role_text, time_base=time.time(), time_type='time_span')
-                role_text = acc_role['time']
-            elif role_type == '行政区域':
-                acc_role = jio.parse_location(role_text)
-                role_text = acc_role
+            print(role_text)
+            # if role_type == '报警时间':
+            #     acc_role = jio.parse_time(role_text, time_base=time.time(), time_type='time_span')
+            #     role_text = acc_role['time']
+            # elif role_type == '行政区域':
+            #     acc_role = jio.parse_location(role_text)
+            #     role_text = acc_role
 
             role_ret[role_type] = role_text
         sent_role_mapping[d_json["id"]] = role_ret
