@@ -37,7 +37,7 @@ parser.add_argument("--model_dir", type=str, default='./ckpt/doccano/role',
                     help="The path to parameters in static graph.")
 parser.add_argument("--data_dir", type=str, default="./conf/doccano", help="The folder where the dataset is located.")
 parser.add_argument("--batch_size", type=int, default=32, help="The number of sequences contained in a mini-batch.")
-parser.add_argument("--device", default="gpu", type=str, choices=["cpu", "gpu"],
+parser.add_argument("--device", default="cpu", type=str, choices=["cpu", "gpu"],
                     help="The device to select to train the model, is must be cpu/gpu.")
 parser.add_argument('--use_tensorrt', default=False, type=eval, choices=[True, False],
                     help='Enable to use tensorrt to speed up.')
@@ -217,7 +217,11 @@ class Predictor(object):
         return parse_decodes(sentences, all_preds, all_lens, label_vocab)
 
 
-if __name__ == '__main__':
+def role_infer(text):
+    """
+    Use static model to predict single sentence
+    """
+
     tokenizer = ErnieTokenizer.from_pretrained('ernie-1.0')
     label_vocab = load_dict(os.path.join(args.data_dir, 'role_tag.dict'))
 
@@ -231,9 +235,11 @@ if __name__ == '__main__':
                           args.use_tensorrt, args.precision, args.enable_mkldnn,
                           args.benchmark, args.save_log_path)
 
-    text = '1月4日12点 武侯 85人死亡 112人受伤'
     test_ds = [[text]]  # origin data format
     results = predictor.predict(test_ds, batchify_fn, tokenizer, label_vocab)
-    print(predict2json(results))
-    if args.benchmark:
-        predictor.autolog.report()
+
+    return predict2json(results)
+
+
+if __name__ == '__main__':
+    print(role_infer('1月4日12点 武侯 85人死亡 112人受伤'))

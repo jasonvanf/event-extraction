@@ -115,7 +115,7 @@ def predict2json(data):
 
             role_text = "".join(r["text"])
             if role_type == '报警时间':
-                acc_role = jio.parse_time(role_text, time.time())
+                acc_role = jio.parse_time(role_text, time_base=time.time(), time_type='time_span')
                 role_text = acc_role['time']
             elif role_type == '行政区域':
                 acc_role = jio.parse_location(role_text)
