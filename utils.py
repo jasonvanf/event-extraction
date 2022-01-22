@@ -13,26 +13,69 @@
 # limitations under the License.
 
 import hashlib
+import re
 import yaml
 import json
 import time
 
-# import jionlp as jio
+import cn2an
+from difflib import SequenceMatcher
 
+import jionlp as jio
 
 NAME_CODE = {
     '行政区域': {'code': 'region', 'group': 4},
-    '单位类型': {'code': 'deptType', 'group': 0},
+    '单位类型': {
+        'code': 'deptType',
+        'group': 0,
+        'option': {
+            '所有类型': 0,
+            '重点单位': 1,
+            '一般单位': 2,
+            '九小场所': 3,
+            '其他单位': 9,
+            'default': 9,
+        },
+    },
     '隐患数量': {'code': 'hiddenCount', 'group': 1},
     '火灾数量': {'code': 'fireCount', 'group': 1},
     '火灾损失': {'code': 'fireLoss', 'group': 1},
-    '建筑类型': {'code': 'buildType', 'group': 0},
+    '建筑类型': {
+        'code': 'buildType',
+        'group': 0,
+        'option': {
+            '全部类型': 0,
+            '高层': 10000,
+            '多层': 20000,
+            '单层': 30000,
+            '地下': 40000,
+            'default': 0,
+        },
+    },
     '建筑面积': {'code': 'buildArea', 'group': 1},
     '死亡人数': {'code': 'deathCount', 'group': 1},
     '受伤人数': {'code': 'injuredCount', 'group': 1},
     '报警时间': {'code': 'alarmTime', 'group': 3},
     '过火面积': {'code': 'fireArea', 'group': 1},
-    '起火原因': {'code': 'fireReason', 'group': 0},
+    '起火原因': {
+        'code': 'fireReason',
+        'group': 0,
+        'option': {
+            '全部原因': 0,
+            '电气火灾': 1,
+            '生产作业类火灾': 2,
+            '生活用火不慎': 3,
+            '吸烟': 4,
+            '玩火': 5,
+            '自燃': 6,
+            '雷击': 7,
+            '静电': 8,
+            '不明确原因': 9,
+            '放火': 10,
+            '其他': 99,
+            'default': 99,
+        },
+    },
 }
 
 
@@ -118,6 +161,68 @@ def extract_result(text, labels):
     return ret
 
 
+def predict_group_0(name, text):
+    options = NAME_CODE[name]['option']
+
+    if not isinstance(options, dict):
+        return [0]
+
+    text = "".join(text)
+    max_ratio = 0.0
+    max_ratio_key = options['default']
+    for key, val in options.items():
+        ratio = SequenceMatcher(None, key, text).ratio()
+        if ratio > max_ratio:
+            max_ratio = ratio
+            max_ratio_key = val
+
+    if max_ratio >= 0.5:
+        result = [max_ratio_key]
+    else:
+        result = [options['default']]
+    return result
+
+
+def predict_group_1(name, ori_text):
+    text_list = re.split('-|到', ori_text)
+
+    if len(text_list) > 2:
+        return [None, None]
+
+    for idx, text in enumerate(text_list):
+        text_list[idx] = "".join([s for s in list(text) if s.isnumeric()])
+        text_list[idx] = int(cn2an.cn2an(text_list[idx], 'smart'))
+
+    if len(text_list) != 2:
+        text_list.append(text_list[0])
+
+    if '以下' in ori_text:
+        text_list[0] = None
+    elif '以上' in ori_text:
+        text_list[1] = None
+
+    return text_list
+
+
+def predict_group_3(name, text):
+    acc_role = jio.parse_time(text, time_base=time.time(), time_type='time_span')
+    return acc_role['time']
+
+
+def predict_group_4(name, text):
+    acc_role = jio.parse_location(text)
+    return acc_role
+
+
+def predict_group(r_group, name, text):
+    return {
+        0: predict_group_0,
+        1: predict_group_1,
+        3: predict_group_3,
+        4: predict_group_4,
+    }.get(r_group)(name, text)
+
+
 def predict2json(data):
     sent_role_mapping = {}
     for d in data:
@@ -126,19 +231,14 @@ def predict2json(data):
         role_ret = {}
         for r in r_ret:
             role_type = NAME_CODE[r["type"]]['code']
+            role_group = NAME_CODE[r["type"]]['group']
             if role_type not in role_ret:
                 role_ret[role_type] = []
 
             role_text = "".join(r["text"])
-            print(role_text)
-            # if role_type == '报警时间':
-            #     acc_role = jio.parse_time(role_text, time_base=time.time(), time_type='time_span')
-            #     role_text = acc_role['time']
-            # elif role_type == '行政区域':
-            #     acc_role = jio.parse_location(role_text)
-            #     role_text = acc_role
+            role_res = predict_group(role_group, r["type"], role_text)
 
-            role_ret[role_type] = role_text
+            role_ret[role_type] = role_res
         sent_role_mapping[d_json["id"]] = role_ret
     return sent_role_mapping
 

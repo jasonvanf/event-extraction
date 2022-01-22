@@ -33,4 +33,4 @@ def hello_world():
 
 if __name__ == '__main__':
     # app.run(host="127.0.0.1", port=5000, debug=True)
-    print(role_infer('1月4日12点 武侯 85人死亡 112人受伤'))
+    print(role_infer('1月4日12点 武侯 0-十人死亡 112人以上受伤 起火原因：电气短路'))
