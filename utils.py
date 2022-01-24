@@ -210,8 +210,18 @@ def predict_group_3(name, text):
 
 
 def predict_group_4(name, text):
-    acc_role = jio.parse_location(text)
-    return acc_role
+    path = ['5101']
+    with open('./conf/doccano/region.json', 'r', encoding='utf-8') as fp:
+        d_json = json.loads(fp.read())
+
+        acc_role = jio.parse_location(text)
+        if 'county' in acc_role:
+            path = [id for id, name in d_json.items() if name == acc_role['county']]
+
+        if 'city' in acc_role and len(path) == 0:
+            path = [id for id, name in d_json.items() if name == acc_role['city']]
+
+    return path
 
 
 def predict_group(r_group, name, text):

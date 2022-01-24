@@ -235,7 +235,9 @@ def role_infer(text):
                           args.use_tensorrt, args.precision, args.enable_mkldnn,
                           args.benchmark, args.save_log_path)
 
-    test_ds = [[text]]  # origin data format
+    # origin data format
+    test_ds = [[text]] if isinstance(text, str) else [text]
+
     results = predictor.predict(test_ds, batchify_fn, tokenizer, label_vocab)
 
     return predict2json(results)
