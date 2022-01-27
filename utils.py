@@ -179,7 +179,7 @@ def predict_group_0(name, text):
     if max_ratio >= 0.5:
         result = [max_ratio_key]
     else:
-        result = [options['default']]
+        result = False
     return result
 
 
@@ -242,13 +242,12 @@ def predict2json(data):
         for r in r_ret:
             role_type = NAME_CODE[r["type"]]['code']
             role_group = NAME_CODE[r["type"]]['group']
-            if role_type not in role_ret:
-                role_ret[role_type] = []
 
             role_text = "".join(r["text"])
             role_res = predict_group(role_group, r["type"], role_text)
+            if role_res and role_type not in role_ret:
+                role_ret[role_type] = role_res
 
-            role_ret[role_type] = role_res
         sent_role_mapping[d_json["id"]] = role_ret
     return sent_role_mapping
 
